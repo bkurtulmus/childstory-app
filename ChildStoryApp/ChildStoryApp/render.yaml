@@ -1,8 +1,10 @@
 services:
   - type: web
     name: childstory-backend
+    runtime: java
     env: java
-    buildCommand: ./mvnw clean package -DskipTests
+    rootDir: ChildStoryApp/ChildStoryApp
+    buildCommand: chmod +x ./mvnw && ./mvnw clean package -DskipTests
     startCommand: java -Dserver.port=$PORT -jar target/ChildStoryApp-0.0.1-SNAPSHOT.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
