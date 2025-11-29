@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: 'postgres:latest'
+    environment:
+      - 'POSTGRES_DB=ChildStoryTeller'
+      - 'POSTGRES_PASSWORD=secret2001'
+      - 'POSTGRES_USER=root'
+    ports:
+      - '5432'

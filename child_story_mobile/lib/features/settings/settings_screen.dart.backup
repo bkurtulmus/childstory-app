@@ -1,0 +1,847 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:child_story_mobile/config/theme.dart';
+import 'package:child_story_mobile/config/typography.dart';
+import 'package:child_story_mobile/config/spacing.dart';
+import 'package:child_story_mobile/providers/theme_provider.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:child_story_mobile/data/services/api_service.dart';
+
+class SettingsScreen extends ConsumerStatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> with TickerProviderStateMixin {
+  bool _notificationsEnabled = true;
+  String _selectedLanguage = 'English 🇬🇧';
+  late AnimationController _entranceController;
+
+  final List<String> _languages = [
+    'English',
+    'Spanish',
+    'French',
+    'German',
+    'Italian',
+    'Portuguese'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _entranceController.dispose();
+    super.dispose();
+  }
+
+  void _showSignOutModal() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => _buildMagicalDialog(
+        context: dialogContext,
+        icon: '👋',
+        title: 'See you soon!',
+        message: 'Are you sure you want to sign out of your magical account?',
+        confirmText: 'Sign Out',
+        confirmColor: AppColors.error,
+        onConfirm: () async {
+          Navigator.pop(dialogContext);
+          await ApiService().logout();
+          if (mounted) context.go('/auth');
+        },
+      ),
+    );
+  }
+
+  void _showDeleteFlow() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => _buildMagicalDialog(
+        context: dialogContext,
+        icon: '⚠️',
+        title: 'Delete Account?',
+        message: 'This will permanently delete all your stories and data. This action cannot be undone!',
+        confirmText: 'Delete Forever',
+        confirmColor: AppColors.error,
+        onConfirm: () {
+          Navigator.pop(dialogContext);
+          // TODO: Implement account deletion
+        },
+      ),
+    );
+  }
+
+  void _showLanguageSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.neutral200,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(height: 24),
+              Text(
+                'Choose Language',
+                style: TextStyle(
+                  fontSize: AppTypography.title,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark,
+                ),
+              ),
+              SizedBox(height: 24),
+              ..._languages.map((lang) => _buildSheetOption(
+                label: lang,
+                selected: lang == _selectedLanguage,
+                onTap: () {
+                  setState(() => _selectedLanguage = lang);
+                  Navigator.pop(context);
+                },
+              )),
+              SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          // Decorative Background
+          Positioned(
+            top: -100,
+            right: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                color: AppColors.primary500.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Positioned(
+            top: 100,
+            left: -50,
+            child: Container(
+              width: 200,
+              height: 200,
+              decoration: BoxDecoration(
+                color: AppColors.accent500.withOpacity(0.05),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+
+          Column(
+            children: [
+              // Magical Header
+              Container(
+                decoration: BoxDecoration(
+                  color: isDark ? theme.colorScheme.surface : Colors.white.withOpacity(0.8),
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary500.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    child: Row(
+                      children: [
+                        _buildCircularButton(
+                          icon: LucideIcons.arrowLeft,
+                          onTap: () => context.pop(),
+                        ),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              Text(
+                                '⚙️ Magic Settings',
+                                style: TextStyle(
+                                  fontSize: AppTypography.caption,
+                                  color: isDark ? Colors.white70 : AppColors.textMuted,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                'App Enchantments',
+                                style: TextStyle(
+                                  fontSize: AppTypography.title,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark ? Colors.white : AppColors.textDark,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 40), // Balance
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Content
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.fromLTRB(20, 24, 20, 100),
+                  physics: BouncingScrollPhysics(),
+                  children: [
+                    // Account Card
+                    SlideTransition(
+                      position: Tween<Offset>(begin: Offset(0, 0.1), end: Offset.zero)
+                          .animate(CurvedAnimation(parent: _entranceController, curve: Curves.easeOut)),
+                      child: FadeTransition(
+                        opacity: _entranceController,
+                        child: _buildAccountCard(),
+                      ),
+                    ),
+
+                    SizedBox(height: 24),
+
+                    // Gamification Promo
+                    SlideTransition(
+                      position: Tween<Offset>(begin: Offset(0, 0.1), end: Offset.zero)
+                          .animate(CurvedAnimation(parent: _entranceController, curve: Interval(0.1, 1.0, curve: Curves.easeOut))),
+                      child: FadeTransition(
+                        opacity: CurvedAnimation(parent: _entranceController, curve: Interval(0.1, 1.0)),
+                        child: _buildGamificationCard(),
+                      ),
+                    ),
+
+                    SizedBox(height: 32),
+
+                    // Settings Sections
+                    _buildAnimatedSection(0.2, 'My Account 👤', [
+                      _buildSettingsRow(
+                        icon: LucideIcons.user,
+                        iconColor: AppColors.primary500,
+                        label: 'Manage Profile',
+                        onTap: () {},
+                      ),
+                      _buildDivider(),
+                      _buildSettingsRow(
+                        icon: LucideIcons.users,
+                        iconColor: AppColors.secondary500,
+                        label: 'Manage Children',
+                        subtitle: 'Add, edit, or remove story heroes',
+                        onTap: () => context.push('/children'),
+                      ),
+                    ]),
+
+                    _buildAnimatedSection(0.3, 'App Magic ✨', [
+                      _buildSettingsRow(
+                        icon: LucideIcons.globe,
+                        iconColor: AppColors.secondary500,
+                        label: 'Language',
+                        trailing: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.neutral100,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            _selectedLanguage,
+                            style: TextStyle(
+                              fontSize: AppTypography.caption,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : AppColors.textDark,
+                            ),
+                          ),
+                        ),
+                        onTap: _showLanguageSheet,
+                      ),
+                      _buildDivider(),
+                      _buildSettingsRow(
+                        icon: ref.watch(themeModeProvider) ? LucideIcons.moon : LucideIcons.sun,
+                        iconColor: AppColors.accent500,
+                        label: 'Dark Mode',
+                        showChevron: false,
+                        trailing: Switch(
+                          value: ref.watch(themeModeProvider),
+                          onChanged: (val) => ref.read(themeModeProvider.notifier).setDarkMode(val),
+                          activeColor: AppColors.accent500,
+                          inactiveThumbColor: Colors.white,
+                          inactiveTrackColor: AppColors.neutral200,
+                        ),
+                      ),
+                      _buildDivider(),
+                      _buildSettingsRow(
+                        icon: LucideIcons.bell,
+                        iconColor: AppColors.enchant500,
+                        label: 'Notifications',
+                        showChevron: false,
+                        trailing: Switch(
+                          value: _notificationsEnabled,
+                          onChanged: (val) => setState(() => _notificationsEnabled = val),
+                          activeColor: AppColors.enchant500,
+                          inactiveThumbColor: Colors.white,
+                          inactiveTrackColor: AppColors.neutral200,
+                        ),
+                      ),
+                    ]),
+
+                    _buildAnimatedSection(0.4, 'Privacy & Secrets 🔒', [
+                      _buildSettingsRow(
+                        icon: LucideIcons.shield,
+                        iconColor: AppColors.primary500,
+                        label: 'Privacy Policy',
+                        onTap: () {},
+                      ),
+                      _buildDivider(),
+                      _buildSettingsRow(
+                        icon: LucideIcons.fileText,
+                        iconColor: AppColors.primary500,
+                        label: 'Terms of Magic',
+                        onTap: () {},
+                      ),
+                      _buildDivider(),
+                      _buildSettingsRow(
+                        icon: LucideIcons.trash2,
+                        iconColor: AppColors.error,
+                        label: 'Delete Account',
+                        labelColor: AppColors.error,
+                        onTap: _showDeleteFlow,
+                      ),
+                    ]),
+
+                    _buildAnimatedSection(0.5, 'Help & Wizards 🧙‍♂️', [
+                      _buildSettingsRow(
+                        icon: LucideIcons.helpCircle,
+                        iconColor: AppColors.secondary500,
+                        label: 'Help Center',
+                        onTap: () {},
+                      ),
+                      _buildDivider(),
+                      _buildSettingsRow(
+                        icon: LucideIcons.mail,
+                        iconColor: AppColors.secondary500,
+                        label: 'Contact Wizards',
+                        onTap: () {},
+                      ),
+                    ]),
+
+                    SizedBox(height: 24),
+                    Center(
+                      child: Column(
+                        children: [
+                          Icon(LucideIcons.sparkles, size: 16, color: AppColors.primary200),
+                          SizedBox(height: 8),
+                          Text(
+                            'ChildStory v1.0.0 • Made with Magic ✨',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnimatedSection(double delay, String title, List<Widget> children) {
+    return SlideTransition(
+      position: Tween<Offset>(begin: Offset(0, 0.1), end: Offset.zero)
+          .animate(CurvedAnimation(parent: _entranceController, curve: Interval(delay, 1.0, curve: Curves.easeOut))),
+      child: FadeTransition(
+        opacity: CurvedAnimation(parent: _entranceController, curve: Interval(delay, 1.0)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.only(left: 16, bottom: 12, top: 8),
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: AppTypography.body,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark,
+                ),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary500.withOpacity(0.05),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(children: children),
+            ),
+            SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAccountCard() {
+    return Builder(
+      builder: (context) {
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        
+        return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            isDark ? theme.colorScheme.surface : Colors.white,
+            isDark ? theme.colorScheme.surface : Color(0xFFF8F9FF)
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary500.withOpacity(0.1),
+            blurRadius: 20,
+            offset: Offset(0, 8),
+          ),
+        ],
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: AppColors.primary100,
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.primary500, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary500.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text('', style: TextStyle(fontSize: 32)),
+            ),
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'John Doe',
+                  style: TextStyle(
+                    fontSize: AppTypography.title,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'john.doe@example.com',
+                  style: TextStyle(
+                    fontSize: AppTypography.caption,
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primary500.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(LucideIcons.chevronRight, color: AppColors.primary500),
+          ),
+        ],
+      ),
+    );
+      },
+    );
+  }
+
+  Widget _buildGamificationCard() {
+    return InkWell(
+      onTap: () => context.push('/gamification'),
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFFFF9E6), Color(0xFFFFE4F0)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: AppColors.accent500.withOpacity(0.3),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.accent500.withOpacity(0.15),
+              blurRadius: 16,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Decorative elements
+            Positioned(
+              right: -10,
+              top: -10,
+              child: Text('', style: TextStyle(fontSize: 60, color: Colors.black.withOpacity(0.3))),
+            ),
+            Positioned(
+              left: 20,
+              bottom: -5,
+              child: Text('', style: TextStyle(fontSize: 40, color: Colors.black.withOpacity(0.2))),
+            ),
+            
+            Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.accent500, AppColors.primary500],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.accent500.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(LucideIcons.trophy, color: Colors.white, size: 28),
+                ),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppColors.accent500, AppColors.primary500],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '🎯 Fun & Learn',
+                          style: TextStyle(color: Colors.white, fontSize: AppTypography.small, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Learning Adventure',
+                        style: TextStyle(
+                          fontSize: AppTypography.title,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      Text(
+                        'Play games, earn badges & track progress!',
+                        style: TextStyle(
+                          fontSize: AppTypography.caption,
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent500.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(LucideIcons.chevronRight, color: AppColors.accent500, size: 20),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsRow({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    String? subtitle,
+    Color? labelColor,
+    Widget? trailing,
+    bool showChevron = true,
+    VoidCallback? onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 20, color: iconColor),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: AppTypography.body,
+                        color: labelColor ?? AppColors.textDark,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: AppTypography.small,
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (trailing != null) ...[ 
+                trailing,
+                SizedBox(width: 8),
+              ],
+              if (showChevron && trailing == null)
+                Icon(
+                  LucideIcons.chevronRight,
+                  size: 20,
+                  color: AppColors.textMuted.withOpacity(0.5),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Container(
+      height: 1,
+      color: AppColors.neutral100,
+      margin: EdgeInsets.only(left: 60, right: 20),
+    );
+  }
+
+  Widget _buildSheetOption({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary500.withOpacity(0.1) : AppColors.neutral100,
+          borderRadius: BorderRadius.circular(20),
+          border: selected ? Border.all(color: AppColors.primary500, width: 2) : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: AppTypography.body,
+                color: AppColors.textDark,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+              ),
+            ),
+            if (selected)
+              Icon(LucideIcons.check, color: AppColors.primary500, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMagicalDialog({
+    required BuildContext context,
+    required String icon,
+    required String title,
+    required String message,
+    required String confirmText,
+    required Color confirmColor,
+    required VoidCallback onConfirm,
+  }) {
+    final theme = Theme.of(context);
+    return Dialog(
+      backgroundColor: theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
+      child: Padding(
+        padding: EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(icon, style: TextStyle(fontSize: AppTypography.display)),
+            SizedBox(height: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark,
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: AppTypography.body,
+                color: AppColors.textBody,
+                height: 1.5,
+              ),
+            ),
+            SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: onConfirm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: confirmColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                ),
+                child: Text(
+                  confirmText,
+                  style: TextStyle(fontSize: AppTypography.title, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Stay & Play',
+                style: TextStyle(
+                  fontSize: AppTypography.body,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCircularButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: AppColors.textDark,
+        ),
+      ),
+    );
+  }
+}
